@@ -30,7 +30,7 @@ public class HolyWorldAIClient implements ClientModInitializer {
                     .executes(ctx -> {
                         learning = false;
                         monitor.analyzeLearning();
-                        ctx.getSource().sendFeedback(Text.literal("§aAI analyzed your style"));
+                        ctx.getSource().sendFeedback(Text.literal("§aAI lesson stoped"));
                         return 1;
                     }))
                 .then(ClientCommandManager.literal("start")
@@ -49,3 +49,4 @@ public class HolyWorldAIClient implements ClientModInitializer {
         });
     }
 }
+
