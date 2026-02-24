@@ -7,7 +7,9 @@ import net.minecraft.text.Text;
 
 public class HolyWorldAIClient implements ClientModInitializer {
 
-    public static boolean learning = false;
+    // ✅ Обучение включено по умолчанию
+    public static boolean learning = true;
+
     public static boolean autoReply = false;
 
     public static ChatMonitor monitor;
@@ -24,29 +26,32 @@ public class HolyWorldAIClient implements ClientModInitializer {
                 .then(ClientCommandManager.literal("startlesson")
                     .executes(ctx -> {
                         learning = true;
-                        monitor.clear();
-                        ctx.getSource().sendFeedback(Text.literal("§aAI learning started"));
+                        ctx.getSource().sendFeedback(
+                                Text.literal("§aAI learning ENABLED"));
                         return 1;
                     }))
 
                 .then(ClientCommandManager.literal("stoplesson")
                     .executes(ctx -> {
                         learning = false;
-                        ctx.getSource().sendFeedback(Text.literal("§aAI lesson stopped"));
+                        ctx.getSource().sendFeedback(
+                                Text.literal("§cAI learning DISABLED"));
                         return 1;
                     }))
 
                 .then(ClientCommandManager.literal("start")
                     .executes(ctx -> {
                         autoReply = true;
-                        ctx.getSource().sendFeedback(Text.literal("§aAI auto-reply enabled"));
+                        ctx.getSource().sendFeedback(
+                                Text.literal("§aAI auto-reply ENABLED"));
                         return 1;
                     }))
 
                 .then(ClientCommandManager.literal("stop")
                     .executes(ctx -> {
                         autoReply = false;
-                        ctx.getSource().sendFeedback(Text.literal("§cAI stopped"));
+                        ctx.getSource().sendFeedback(
+                                Text.literal("§cAI auto-reply DISABLED"));
                         return 1;
                     }))
             );
