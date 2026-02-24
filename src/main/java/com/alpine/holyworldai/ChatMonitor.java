@@ -4,7 +4,6 @@ import net.minecraft.client.MinecraftClient;
 
 import java.io.*;
 import java.nio.file.*;
-import java.util.*;
 import java.util.regex.*;
 
 public class ChatMonitor {
@@ -13,16 +12,25 @@ public class ChatMonitor {
     private static final Pattern CHECK_PATTERN =
             Pattern.compile("\\[CHECK\\]\\s+(\\S+)\\s+->\\s+(.+)");
 
-    private static final int CONTEXT_LIMIT = 8;
+    private final Path lessonFile =
+            Paths.get("config/holyworldai/lesson.txt");
 
-    private final List<String> dialogueHistory = new ArrayList<>();
+    public ChatMonitor() {
+        try {
+            Files.createDirectories(lessonFile.getParent());
+            if (!Files.exists(lessonFile)) {
+                Files.createFile(lessonFile);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
-    private final Path dataFile =
-            Paths.get("config/holyworldai/dialogues.txt");
-
-    // =================== RECEIVE ===================
+    // ================= RECEIVE =================
 
     public void onChatMessage(String fullMessage) {
+
+        if (!HolyWorldAIClient.learning) return;
 
         String clean = COLOR_PATTERN.matcher(fullMessage).replaceAll("");
         Matcher matcher = CHECK_PATTERN.matcher(clean);
@@ -32,67 +40,52 @@ public class ChatMonitor {
             String nick = matcher.group(1);
             String message = matcher.group(2);
 
-            if (HolyWorldAIClient.learning) {
-                addLine("PLAYER: " + message);
-            }
-
-            if (HolyWorldAIClient.autoReply) {
-                new Thread(() -> {
-                    String response =
-                            DeepSeekService.ask(message, getRecentContext());
-
-                    if (response != null && !response.isEmpty()) {
-                        MinecraftClient.getInstance().execute(() ->
-                                MinecraftClient.getInstance()
-                                        .player.networkHandler
-                                        .sendChatMessage(response)
-                        );
-
-                        if (HolyWorldAIClient.learning) {
-                            addLine("MOD: " + response);
-                        }
-                    }
-                }).start();
-            }
+            writeLine("PLAYER (" + nick + "): " + message);
         }
     }
 
-    // =================== SEND ===================
+    // ================= SEND =================
 
     public void onSendMessage(String message) {
-        if (HolyWorldAIClient.learning && !message.startsWith("/")) {
-            addLine("MOD: " + message);
+
+        if (!HolyWorldAIClient.learning) return;
+
+        if (!message.startsWith("/")) {
+            writeLine("MOD: " + message);
         }
     }
 
-    // =================== CONTEXT ===================
+    // ================= WRITE =================
 
-    private void addLine(String line) {
-        dialogueHistory.add(line);
-        System.out.println("AI LOG: " + line);
-    }
+    private void writeLine(String line) {
+        try (BufferedWriter writer = Files.newBufferedWriter(
+                lessonFile,
+                StandardOpenOption.APPEND)) {
 
-    private String getRecentContext() {
-        int start = Math.max(0, dialogueHistory.size() - CONTEXT_LIMIT);
-        return String.join("\n", dialogueHistory.subList(start, dialogueHistory.size()));
-    }
+            writer.write(line);
+            writer.newLine();
 
-    // =================== SAVE / LOAD ===================
+            System.out.println("Saved: " + line);
 
-    public void saveToFile() {
-        try {
-            Files.createDirectories(dataFile.getParent());
-            Files.write(dataFile, dialogueHistory);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public void loadFromFile() {
+    // ================= READ ALL =================
+
+    public String readAllLessons() {
         try {
-            if (Files.exists(dataFile)) {
-                dialogueHistory.addAll(Files.readAllLines(dataFile));
-            }
+            return Files.readString(lessonFile);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return "";
+        }
+    }
+
+    public void clearFile() {
+        try {
+            Files.writeString(lessonFile, "");
         } catch (IOException e) {
             e.printStackTrace();
         }
