@@ -1,21 +1,38 @@
-package com.alpine.holyworldai.mixin;
+package com.alpine.holyworldai;
 
-import com.alpine.holyworldai.HolyWorldAIClient;
-import net.minecraft.client.gui.hud.ChatHud;
+import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.minecraft.text.Text;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(ChatHud.class)
-public class ChatHudMixin {
+public class HolyWorldAIClient implements ClientModInitializer {
 
-    @Inject(method = "addMessage(Lnet/minecraft/text/Text;)V", at = @At("TAIL"))
-    private void onAddMessage(Text message, CallbackInfo ci) {
+    public static boolean autoReply = true;
+    public static ChatMonitor monitor;
 
-        if (HolyWorldAIClient.monitor != null) {
-            HolyWorldAIClient.monitor.onChatMessage(message.getString());
-        }
+    @Override
+    public void onInitializeClient() {
+
+        monitor = new ChatMonitor();
+
+        ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
+
+            dispatcher.register(ClientCommandManager.literal("ai")
+
+                .then(ClientCommandManager.literal("start")
+                    .executes(ctx -> {
+                        autoReply = true;
+                        ctx.getSource().sendFeedback(Text.literal("§aAI ENABLED"));
+                        return 1;
+                    }))
+
+                .then(ClientCommandManager.literal("stop")
+                    .executes(ctx -> {
+                        autoReply = false;
+                        ctx.getSource().sendFeedback(Text.literal("§cAI DISABLED"));
+                        return 1;
+                    }))
+            );
+        });
     }
 }
