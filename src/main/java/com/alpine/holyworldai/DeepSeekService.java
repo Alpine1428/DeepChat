@@ -4,7 +4,6 @@ import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
-import java.util.*;
 
 public class DeepSeekService {
 
@@ -35,7 +34,7 @@ public class DeepSeekService {
         }
     }
 
-    public static String ask(String playerMessage, String context) {
+    public static String sendFullLesson(String lessonText) {
 
         if (apiKey == null || apiKey.contains("PUT_YOUR_KEY_HERE")) {
             return "API key not set";
@@ -50,7 +49,7 @@ public class DeepSeekService {
             con.setRequestProperty("Authorization", "Bearer " + apiKey);
             con.setDoOutput(true);
 
-            String safeMessage = playerMessage.replace("\"", "");
+            String safeText = lessonText.replace("\"", "");
 
             String json =
                     "{"
@@ -58,14 +57,12 @@ public class DeepSeekService {
                             + "\"messages\":["
                             + "{"
                             + "\"role\":\"system\","
-                            + "\"content\":\"Ты модератор HolyWorld. Отвечай строго, кратко и профессионально.\""
+                            + "\"content\":\"Проанализируй стиль модератора.\""
                             + "},"
                             + "{"
                             + "\"role\":\"user\","
-                            + "\"content\":\"Контекст:\\n"
-                            + context.replace("\"","")
-                            + "\\nИгрок: "
-                            + safeMessage
+                            + "\"content\":\""
+                            + safeText
                             + "\""
                             + "}"
                             + "]"
@@ -85,14 +82,7 @@ public class DeepSeekService {
                 response.append(line);
             }
 
-            String resp = response.toString();
-
-            int start = resp.indexOf("\"content\":\"") + 11;
-            int end = resp.indexOf("\"", start);
-
-            if (start < 11 || end < 0) return "AI parse error";
-
-            return resp.substring(start, end);
+            return response.toString();
 
         } catch (Exception e) {
             e.printStackTrace();
