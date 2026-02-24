@@ -2,8 +2,9 @@ package com.alpine.holyworldai;
 
 import net.minecraft.client.MinecraftClient;
 
-import java.util.*;
-import java.util.regex.*;
+import java.util.Random;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ChatMonitor {
 
@@ -22,11 +23,11 @@ public class ChatMonitor {
         Matcher matcher = CHECK_PATTERN.matcher(clean);
         if (!matcher.find()) return;
 
-        String playerMessage = matcher.group(2).toLowerCase().trim();
+        String msg = matcher.group(2).toLowerCase().trim();
 
-        String response = generateResponse(playerMessage);
+        String response = generateResponse(msg);
 
-        if (response != null && !response.isEmpty()) {
+        if (response != null) {
             MinecraftClient.getInstance().execute(() ->
                     MinecraftClient.getInstance().player
                             .networkHandler.sendChatMessage(response)
@@ -36,103 +37,42 @@ public class ChatMonitor {
 
     private String generateResponse(String msg) {
 
-        // ======== ЗА ЧТО ========
-        if (contains(msg, "за что", "за что?", "почему", "причина", "чё вызвал", "что я сделал")) {
+        if (msg.contains("за что") || msg.contains("причин")) {
             return randomFrom(
-                    "Проверка проводится по многочисленным репортам.",
-                    "На вас поступили жалобы. Идёт стандартная проверка.",
-                    "Подозрительная активность. Проверка обязательна.",
-                    "Многочисленные репорты. Начинаем проверку."
+                    "Проверка по репортам.",
+                    "Многочисленные жалобы.",
+                    "Подозрительная активность."
             );
         }
 
-        // ======== Я НЕ ЧИТЕР ========
-        if (contains(msg, "я не читер", "я чист", "нет читов", "без софта", "я без читов")) {
+        if (msg.contains("дс") || msg.contains("discord")) {
             return randomFrom(
-                    "Отлично. Тогда проверка пройдёт быстро.",
-                    "Если вы чисты — проблем не будет.",
-                    "Тогда скачивайте AnyDesk и подтвердим.",
-                    "Хорошо, сейчас это проверим."
-            );
-        }
-
-        // ======== ДС МОЖНО ========
-        if (contains(msg, "дс", "discord", "по дс", "через дс")) {
-            return randomFrom(
-                    "Проверки через Discord не проводим.",
-                    "По Discord проверки запрещены.",
+                    "Через Discord проверки не проводим.",
                     "Только AnyDesk или RustDesk.",
-                    "Нет. Проверка строго через удалённый доступ."
+                    "Нет."
             );
         }
 
-        // ======== НЕТ АНИДЕСКА ========
-        if (contains(msg, "нет ани", "не качается", "не могу скачать", "не работает ани")) {
+        if (msg.contains("я не читер") || msg.contains("я чист")) {
             return randomFrom(
-                    "Скачивайте с официального сайта anydesk.com.",
-                    "Попробуйте RustDesk.",
-                    "Если не работает — используйте RustDesk.",
-                    "Анидеск обязателен для проверки."
+                    "Тогда проблем не будет.",
+                    "Сейчас проверим.",
+                    "Скачивайте AnyDesk."
             );
         }
 
-        // ======== СКОЛЬКО ВРЕМЕНИ ========
-        if (contains(msg, "сколько времени", "сколько осталось", "время", "минут")) {
+        if (msg.contains("я софт") || msg.contains("признаю")) {
             return randomFrom(
-                    "У вас 3 минуты.",
-                    "Осталось 2 минуты.",
-                    "Время ограничено — поторопитесь.",
-                    "Таймер идёт."
-            );
-        }
-
-        // ======== ПРИЗНАНИЕ ========
-        if (contains(msg, "я софт", "признаю", "я чит", "бань")) {
-            return randomFrom(
-                    "Признание уменьшает срок наказания.",
+                    "Признание уменьшает срок.",
                     "Фиксирую признание.",
-                    "Бан будет сокращён за признание.",
-                    "Хорошо. Оформляю."
+                    "Оформляю."
             );
         }
 
-        // ======== ТАЙМЕР ТЯНЕТ ========
-        if (contains(msg, "жду", "ну", "ало", "ты тут", "что дальше")) {
-            return randomFrom(
-                    "Кидайте код.",
-                    "Принимайте подключение.",
-                    "Жду ID.",
-                    "Действуйте быстрее."
-            );
-        }
-
-        // ======== АГРЕССИЯ ========
-        if (contains(msg, "нахуй", "пидор", "хуесос", "долбаеб")) {
-            return randomFrom(
-                    "Следите за речью.",
-                    "Ещё одно подобное сообщение — мут.",
-                    "Адекватнее.",
-                    "Предупреждение."
-            );
-        }
-
-        // ======== ПО УМОЛЧАНИЮ ========
-        return randomFrom(
-                "AnyDesk или признание.",
-                "Действуйте.",
-                "Жду.",
-                "+"
-        );
+        return randomFrom("Жду.", "+", "AnyDesk.");
     }
 
-    private boolean contains(String msg, String... words) {
-        for (String w : words) {
-            if (msg.contains(w)) return true;
-        }
-        return false;
-    }
-
-    private String randomFrom(String... options) {
-        return options[random.nextInt(options.length)];
+    private String randomFrom(String... arr) {
+        return arr[random.nextInt(arr.length)];
     }
 }
