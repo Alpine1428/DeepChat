@@ -1,4 +1,3 @@
-
 package com.alpine.holyworldai;
 
 import net.fabricmc.api.ClientModInitializer;
@@ -15,10 +14,13 @@ public class HolyWorldAIClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+
         monitor = new ChatMonitor();
 
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
+
             dispatcher.register(ClientCommandManager.literal("ai")
+
                 .then(ClientCommandManager.literal("startlesson")
                     .executes(ctx -> {
                         learning = true;
@@ -26,19 +28,21 @@ public class HolyWorldAIClient implements ClientModInitializer {
                         ctx.getSource().sendFeedback(Text.literal("§aAI learning started"));
                         return 1;
                     }))
+
                 .then(ClientCommandManager.literal("stoplesson")
                     .executes(ctx -> {
                         learning = false;
-                        monitor.analyzeLearning();
-                        ctx.getSource().sendFeedback(Text.literal("§aAI lesson stoped"));
+                        ctx.getSource().sendFeedback(Text.literal("§aAI lesson stopped"));
                         return 1;
                     }))
+
                 .then(ClientCommandManager.literal("start")
                     .executes(ctx -> {
                         autoReply = true;
                         ctx.getSource().sendFeedback(Text.literal("§aAI auto-reply enabled"));
                         return 1;
                     }))
+
                 .then(ClientCommandManager.literal("stop")
                     .executes(ctx -> {
                         autoReply = false;
@@ -49,4 +53,3 @@ public class HolyWorldAIClient implements ClientModInitializer {
         });
     }
 }
-
