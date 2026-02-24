@@ -7,9 +7,7 @@ import net.minecraft.text.Text;
 
 public class HolyWorldAIClient implements ClientModInitializer {
 
-    // ✅ Обучение включено по умолчанию
-    public static boolean learning = true;
-
+    public static boolean learning = true;      // ✅ учится всегда
     public static boolean autoReply = false;
 
     public static ChatMonitor monitor;
@@ -18,6 +16,7 @@ public class HolyWorldAIClient implements ClientModInitializer {
     public void onInitializeClient() {
 
         monitor = new ChatMonitor();
+        monitor.loadFromFile(); // ✅ загрузка старых диалогов
 
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
 
@@ -26,32 +25,29 @@ public class HolyWorldAIClient implements ClientModInitializer {
                 .then(ClientCommandManager.literal("startlesson")
                     .executes(ctx -> {
                         learning = true;
-                        ctx.getSource().sendFeedback(
-                                Text.literal("§aAI learning ENABLED"));
+                        ctx.getSource().sendFeedback(Text.literal("§aLearning ENABLED"));
                         return 1;
                     }))
 
                 .then(ClientCommandManager.literal("stoplesson")
                     .executes(ctx -> {
                         learning = false;
-                        ctx.getSource().sendFeedback(
-                                Text.literal("§cAI learning DISABLED"));
+                        monitor.saveToFile(); // ✅ сохраняем
+                        ctx.getSource().sendFeedback(Text.literal("§cLearning DISABLED"));
                         return 1;
                     }))
 
                 .then(ClientCommandManager.literal("start")
                     .executes(ctx -> {
                         autoReply = true;
-                        ctx.getSource().sendFeedback(
-                                Text.literal("§aAI auto-reply ENABLED"));
+                        ctx.getSource().sendFeedback(Text.literal("§aAutoReply ENABLED"));
                         return 1;
                     }))
 
                 .then(ClientCommandManager.literal("stop")
                     .executes(ctx -> {
                         autoReply = false;
-                        ctx.getSource().sendFeedback(
-                                Text.literal("§cAI auto-reply DISABLED"));
+                        ctx.getSource().sendFeedback(Text.literal("§cAutoReply DISABLED"));
                         return 1;
                     }))
             );
