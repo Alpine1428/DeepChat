@@ -7,8 +7,7 @@ import net.minecraft.text.Text;
 
 public class HolyWorldAIClient implements ClientModInitializer {
 
-    public static boolean learning = true;
-
+    public static boolean autoReply = true;
     public static ChatMonitor monitor;
 
     @Override
@@ -20,32 +19,17 @@ public class HolyWorldAIClient implements ClientModInitializer {
 
             dispatcher.register(ClientCommandManager.literal("ai")
 
-                .then(ClientCommandManager.literal("stoplesson")
+                .then(ClientCommandManager.literal("start")
                     .executes(ctx -> {
-
-                        learning = false;
-
-                        String allText = monitor.readAllLessons();
-
-                        ctx.getSource().sendFeedback(
-                                Text.literal("§aSending lesson to DeepSeek..."));
-
-                        new Thread(() -> {
-                            String response =
-                                    DeepSeekService.sendFullLesson(allText);
-
-                            System.out.println("DeepSeek response:");
-                            System.out.println(response);
-                        }).start();
-
+                        autoReply = true;
+                        ctx.getSource().sendFeedback(Text.literal("§aAI ENABLED"));
                         return 1;
                     }))
 
-                .then(ClientCommandManager.literal("startlesson")
+                .then(ClientCommandManager.literal("stop")
                     .executes(ctx -> {
-                        learning = true;
-                        ctx.getSource().sendFeedback(
-                                Text.literal("§aLearning ENABLED"));
+                        autoReply = false;
+                        ctx.getSource().sendFeedback(Text.literal("§cAI DISABLED"));
                         return 1;
                     }))
             );
