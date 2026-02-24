@@ -1,35 +1,30 @@
 package com.alpine.holyworldai;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import net.minecraft.client.MinecraftClient;
+
+import java.io.*;
+import java.nio.file.*;
+import java.util.*;
+import java.util.regex.*;
 
 public class ChatMonitor {
 
-    // Удаляем цвет-коды §a §l и т.д.
     private static final Pattern COLOR_PATTERN = Pattern.compile("§.");
-
-    // Формат:
-    // [CHECK] Nick -> message
     private static final Pattern CHECK_PATTERN =
             Pattern.compile("\\[CHECK\\]\\s+(\\S+)\\s+->\\s+(.+)");
 
-    private final List<String> playerMessages = new ArrayList<>();
-    private final List<String> moderatorMessages = new ArrayList<>();
+    private static final int CONTEXT_LIMIT = 8;
 
-    public void clear() {
-        playerMessages.clear();
-        moderatorMessages.clear();
-    }
+    private final List<String> dialogueHistory = new ArrayList<>();
 
-    // ===================== СООБЩЕНИЕ ИГРОКА =====================
+    private final Path dataFile =
+            Paths.get("config/holyworldai/dialogues.txt");
+
+    // =================== RECEIVE ===================
 
     public void onChatMessage(String fullMessage) {
 
-        // Убираем цвет
         String clean = COLOR_PATTERN.matcher(fullMessage).replaceAll("");
-
         Matcher matcher = CHECK_PATTERN.matcher(clean);
 
         if (matcher.find()) {
@@ -37,29 +32,69 @@ public class ChatMonitor {
             String nick = matcher.group(1);
             String message = matcher.group(2);
 
-            playerMessages.add(message);
+            if (HolyWorldAIClient.learning) {
+                addLine("PLAYER: " + message);
+            }
 
-            System.out.println("✅ CHECK PLAYER DETECTED");
-            System.out.println("Nick: " + nick);
-            System.out.println("Message: " + message);
+            if (HolyWorldAIClient.autoReply) {
+                new Thread(() -> {
+                    String response =
+                            DeepSeekService.ask(message, getRecentContext());
+
+                    if (response != null && !response.isEmpty()) {
+                        MinecraftClient.getInstance().execute(() ->
+                                MinecraftClient.getInstance()
+                                        .player.networkHandler
+                                        .sendChatMessage(response)
+                        );
+
+                        if (HolyWorldAIClient.learning) {
+                            addLine("MOD: " + response);
+                        }
+                    }
+                }).start();
+            }
         }
     }
 
-    // ===================== ТВОИ СООБЩЕНИЯ =====================
+    // =================== SEND ===================
 
     public void onSendMessage(String message) {
-
-        if (!message.startsWith("/")) {
-            moderatorMessages.add(message);
-            System.out.println("✅ MOD MESSAGE: " + message);
+        if (HolyWorldAIClient.learning && !message.startsWith("/")) {
+            addLine("MOD: " + message);
         }
     }
 
-    public List<String> getPlayerMessages() {
-        return playerMessages;
+    // =================== CONTEXT ===================
+
+    private void addLine(String line) {
+        dialogueHistory.add(line);
+        System.out.println("AI LOG: " + line);
     }
 
-    public List<String> getModeratorMessages() {
-        return moderatorMessages;
+    private String getRecentContext() {
+        int start = Math.max(0, dialogueHistory.size() - CONTEXT_LIMIT);
+        return String.join("\n", dialogueHistory.subList(start, dialogueHistory.size()));
+    }
+
+    // =================== SAVE / LOAD ===================
+
+    public void saveToFile() {
+        try {
+            Files.createDirectories(dataFile.getParent());
+            Files.write(dataFile, dialogueHistory);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void loadFromFile() {
+        try {
+            if (Files.exists(dataFile)) {
+                dialogueHistory.addAll(Files.readAllLines(dataFile));
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
