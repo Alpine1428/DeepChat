@@ -1,25 +1,20 @@
 package com.alpine.holyworldai;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
+import java.io.*;
+import java.net.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
+import java.util.*;
 
 public class DeepSeekService {
 
     private static String apiKey = null;
-    private static String learnedStyle = "";
 
     static {
-        loadConfig();
+        loadKey();
     }
 
-    private static void loadConfig() {
+    private static void loadKey() {
         try {
             Path path = Paths.get("config/holyworldai/config.json");
 
@@ -40,14 +35,10 @@ public class DeepSeekService {
         }
     }
 
-    public static void learnFromDialogue(java.util.List<String> dialogue) {
-        learnedStyle = String.join("\n", dialogue);
-    }
-
-    public static String ask(String playerMessage, java.util.List<String> dialogue) {
+    public static String ask(String playerMessage, String context) {
 
         if (apiKey == null || apiKey.contains("PUT_YOUR_KEY_HERE")) {
-            return "API key not set.";
+            return "API key not set";
         }
 
         try {
@@ -61,23 +52,27 @@ public class DeepSeekService {
 
             String safeMessage = playerMessage.replace("\"", "");
 
-            String jsonBody =
+            String json =
                     "{"
                             + "\"model\":\"deepseek-chat\","
                             + "\"messages\":["
                             + "{"
                             + "\"role\":\"system\","
-                            + "\"content\":\"Ты модератор HolyWorld. Отвечай строго и профессионально.\""
+                            + "\"content\":\"Ты модератор HolyWorld. Отвечай строго, кратко и профессионально.\""
                             + "},"
                             + "{"
                             + "\"role\":\"user\","
-                            + "\"content\":\"" + safeMessage + "\""
+                            + "\"content\":\"Контекст:\\n"
+                            + context.replace("\"","")
+                            + "\\nИгрок: "
+                            + safeMessage
+                            + "\""
                             + "}"
                             + "]"
                             + "}";
 
             try (OutputStream os = con.getOutputStream()) {
-                os.write(jsonBody.getBytes(StandardCharsets.UTF_8));
+                os.write(json.getBytes(StandardCharsets.UTF_8));
             }
 
             BufferedReader br =
@@ -95,9 +90,7 @@ public class DeepSeekService {
             int start = resp.indexOf("\"content\":\"") + 11;
             int end = resp.indexOf("\"", start);
 
-            if (start < 11 || end < 0) {
-                return "AI parsing error";
-            }
+            if (start < 11 || end < 0) return "AI parse error";
 
             return resp.substring(start, end);
 
